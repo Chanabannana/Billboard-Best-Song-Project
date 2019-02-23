@@ -1,0 +1,60 @@
+---
+title: "The Quintessential Billboard Hit"
+author: "Brandon Chan"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This project is currently in the works. It will be finished soon!
+
+My goal in this analysis is to use Spotify's song data on billboard hits from 2000 to 2018 to find what defines the quintessential billboard hit.
+
+```{r read}
+billboard <- read.csv("~/SCHOOL/Winter 19/billboard_2000_2018_spotify_lyrics.csv", comment.char="#")
+library(tidyverse)
+library(lubridate)
+```
+
+```{r}
+head(billboard)
+```
+
+First, I start by cleaning up the data.
+  1. Turn the date column into datetime objects
+  2. Get rid of songs with unknown data values because these songs are not useful for data analysis.
+```{r cleanup}
+billboard <- billboard %>% 
+  mutate(date = parse_date_time(date, order = "mdy")) %>% 
+  filter(broad_genre != "unknown" & energy != "unknown" & liveness != "unknown" & tempo != "unknown" & speechiness != "unknown" & acousticness != "unknown" & instrumentalness != "unknown" & danceability != "unknown" & loudness != "unknown" & valence != "unknown") 
+
+billboard <- billboard[!(is.na(billboard$broad_genre) | billboard$broad_genre==""), ]
+```
+
+Next, I want to make a single score that can represent how much of a HIT a song was. I will call it the "HITscore" and it will be calculated by summing the rank and the number of weeks the song spent on the charts.
+```{r HITscore}
+billboard <- billboard %>%
+  mutate(HITscore = rank + weeks)
+```
+
+With the HITscore, I can now plot it with much of what defines a song.
+```{r data analysis}
+sort <- within(billboard, broad_genre <- factor(broad_genre, levels = names(sort(table(broad_genre), decreasing = TRUE))))
+
+ggplot(sort, aes(x = broad_genre, y = HITscore)) + geom_col(aes(fill = year)) + xlab("HIT score") + ylab("Genre") + ggtitle("Biggest HIT Genre")
+```
+We see here that rap absolutely dominates the charts, especially in recent years. Rock, R&B, and Country are losing their touch, while Pop picks up some steam. What this graph tells us is that for the biggest hit song, its gotta be a rap song.
+
+Now I want to hone in on the optimal song qualities. While some of these elements might not work the best together, we'll assume they do for the purposes of this analysis.
+```{r}
+head(billboard)
+billboard$energy <- as.numeric(paste(billboard$energy))
+summary(billboard$energy)
+billboard <- billboard %>% 
+  #left off right here. making energy categories. divide into 3 percentile categories.
+  mutate(energy_category = ifelse(energy > 0.0565 & energy))
+ggplot(billboard, aes(x = energy, y = HITscore)) + geom_point()
+```
+
